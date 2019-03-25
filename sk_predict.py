@@ -3,7 +3,7 @@ from sklearn.linear_model import SGDRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
 
-from data_helper import data_loader, mae
+from data_helper import data_loader, mae, model_saver
 
 train_x, train_y, test_x, test_y = data_loader()
 train_y = np.array(train_y)
@@ -28,10 +28,14 @@ def sgd_model():
 
 
 def nn_model():
-    nn = MLPRegressor(hidden_layer_sizes=(200, 100, 2), activation='relu', solver='adam', verbose=True)
+    nn = MLPRegressor(hidden_layer_sizes=(50, 50, 40, 30, 20, 2), activation='relu', solver='adam', verbose=True,
+                      max_iter=4000, tol=0.000001)
     nn.fit(train_x, train_y_in)
     pre_y = nn.predict(test_x)
-    print(mae(np.array(pre_y), test_y_in))
+    score = mae(np.array(pre_y), test_y_in)
+    print('score: ', score)
+    model_saver(nn, '{}_{}'.format('nn_50_50_40_30_20_2', score))
 
 
-nn_model()
+if __name__ == '__main__':
+    nn_model()

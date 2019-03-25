@@ -9,6 +9,17 @@ dt = [dt.strftime("%Y-%m-%d") for dt in datetime]
 record = []
 
 
+def model_saver(model, name):
+    with open('data/{}.pkl'.format(name), 'wb') as f:
+        pickle.dump(model, f)
+
+
+def model_loader(name):
+    with open('data/{}.pkl'.format(name), 'rb') as f:
+        morel = pickle.load(f)
+    return morel
+
+
 def data_loader():
     """
     加载训练数据
