@@ -102,6 +102,29 @@ def all_sample_10min():
             pickle.dump(df2, f)
 
 
+def test_29():
+    """
+    29日csv数据形成训练数据
+    :return:
+    """
+
+    def holiday(time):
+        if time.weekday() in [5, 6]:
+            return 1
+        return -1
+
+    df_29 = pd.read_csv('data/Metro_testA/Metro_testA/testA_submit_2019-01-29.csv')
+    df_29['time'] = df_29['startTime'].astype('datetime64[ns]')
+    df_29['weekday'] = [x.weekday() for x in df_29['time']]
+    df_29['hour'] = [x.hour for x in df_29['time']]
+    df_29['minute'] = [x.hour * 60 + x.minute for x in df_29['time']]
+    df_29['holiday'] = [holiday(x) for x in df_29['time']]
+    df_29['station'] = df_29['stationID']
+
+    with open('data/Metro_train/Metro_train/test_29.pkl', 'wb') as f:
+        pickle.dump(df_29, f)
+
+
 def concat_10min():
     """
     [ 数据预处理 ]将10min聚合数据，聚合成单一文件，行
@@ -201,3 +224,4 @@ if __name__ == '__main__':
     all_sample_10min()
     concat_10min()
     concat_10min_train_test_data()
+    test_29()
