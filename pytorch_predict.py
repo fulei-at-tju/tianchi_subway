@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import torch.utils.data as Data
 import numpy as np
 
-from data_helper import data_loader, mae
+from data_helper import data_loader, mae, model_saver
 
 train_x, train_y, test_x, test_y = data_loader()
 train_y = np.array(train_y)
@@ -17,7 +17,7 @@ test_x = torch.Tensor(test_x)
 test_y = torch.Tensor(test_y)
 
 LR = 0.01
-BATCH_SIZE = 50
+BATCH_SIZE = 5
 
 torch_dataset = Data.TensorDataset(train_x, train_y)
 
@@ -55,7 +55,7 @@ loss_func = torch.nn.L1Loss()
 
 
 def batch_train():
-    for epoch in range(3):
+    for epoch in range(10):
         for step, (batch_x, batch_y) in enumerate(loader):
             prediction = net(batch_x)
             loss = loss_func(prediction, batch_y)
@@ -63,7 +63,8 @@ def batch_train():
             loss.backward()
             optimizer.step()
 
-            if step % 5 == 0:
+            if step % 50 == 0:
+                model_saver(net, 'pytorch_01')
                 pre_test = net(test_x)
                 in_num = pre_test.data.numpy()[:, 0]
                 out_num = pre_test.data.numpy()[:, 1]
@@ -81,7 +82,8 @@ def train():
         loss.backward()
         optimizer.step()
 
-        if t % 5 == 0:
+        if t % 50 == 0:
+            model_saver(net, 'pytorch_02')
             pre_test = net(test_x)
             in_num = pre_test.data.numpy()[:, 0]
             out_num = pre_test.data.numpy()[:, 1]
@@ -92,4 +94,4 @@ def train():
 
 
 if __name__ == '__main__':
-    batch_train()
+    train()

@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.linear_model import SGDRegressor
 from sklearn.neural_network import MLPRegressor
+from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.svm import SVR
 
 from data_helper import data_loader, mae, model_saver
@@ -37,5 +38,18 @@ def nn_model():
     model_saver(nn, '{}_{}'.format('nn_50_50_40_30_20_2', score))
 
 
+def etc_model():
+    """
+    内存溢出
+    :return:
+    """
+    forest = ExtraTreesClassifier(n_estimators=10, max_depth=None, min_samples_split=2, verbose=True, random_state=0)
+    forest.fit(train_x, train_y_in)
+    pre_y = forest.predict(test_x)
+    score = mae(np.array(pre_y), test_y_in)
+    print('score: ', score)
+    model_saver(forest, '{}_{}'.format('ExtraTreesClassifier', score))
+
+
 if __name__ == '__main__':
-    nn_model()
+    etc_model()
