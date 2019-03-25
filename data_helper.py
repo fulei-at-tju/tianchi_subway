@@ -20,6 +20,32 @@ def model_loader(name):
     return morel
 
 
+def test_data_loader():
+    """
+    加载29日数据，用于预测
+    :return:
+    """
+    with open('data/Metro_train/Metro_train/test_29.pkl', 'rb') as f:
+        df_29 = pickle.load(f)
+    test_x = [[row.station, row.weekday, row.hour, row.minute, row.holiday] for index, row in df_29.iterrows()]
+
+    return test_x
+
+
+def make_ans(in_nums, out_nums, file_name):
+    """
+    将结果写入csv
+    :param in_nums: 列表 或 ndarray
+    :param out_nums: 列表 或 ndarray
+    :param file_name:
+    :return:
+    """
+    df_29 = pd.read_csv('data/Metro_testA/Metro_testA/testA_submit_2019-01-29.csv')
+    df_29['inNums'] = in_nums
+    df_29['outNums'] = out_nums
+    df_29.to_csv('data/result/{file_name}.csv'.format(file_name=file_name), index=False)
+
+
 def data_loader():
     """
     加载训练数据

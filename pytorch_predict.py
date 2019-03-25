@@ -58,9 +58,7 @@ def batch_train():
     for epoch in range(3):
         for step, (batch_x, batch_y) in enumerate(loader):
             prediction = net(batch_x)
-
             loss = loss_func(prediction, batch_y)
-
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -77,13 +75,11 @@ def batch_train():
 
 def train():
     for t in range(20000):
-        prediction = net(train_x)  # input x and predict based on x
-
-        loss = loss_func(prediction, train_y)  # must be (1. nn output, 2. target)
-
-        optimizer.zero_grad()  # clear gradients for next train
-        loss.backward()  # backpropagation, compute gradients
-        optimizer.step()  # apply gradients
+        prediction = net(train_x)
+        loss = loss_func(prediction, train_y)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
         if t % 5 == 0:
             pre_test = net(test_x)
@@ -91,7 +87,7 @@ def train():
             out_num = pre_test.data.numpy()[:, 1]
             score = (mae(in_num, test_y_in) + mae(out_num, test_y_in)) / 2
             loss2 = loss_func(pre_test, test_y)
-            print('step-{step}  train:  loss-{loss}   test:  loss-{loss2}, loss-{loss3}'
+            print('step：{step}  train:  loss-{loss}  test:  loss-{loss2}  loss-{loss3}'
                   .format(step=t, loss=loss, loss2=loss2, loss3=score))
 
 
