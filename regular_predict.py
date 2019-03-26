@@ -16,7 +16,36 @@ df_29 = pd.merge(left=df_29, right=record_all, left_on=['stationID', 'hms'], rig
 # base data
 df_29['inNums'], df_29['outNums'] = df_29['2019-01-28_inNums'], df_29['2019-01-28_outNums']
 
-# rule
-df_29[df_29['startTime'] < '2019-01-29 00:10:00']
+"""rule 周一周二之差最小的两天差距均值"""
+Monday = ['2019-01-07', '2019-01-14', '2019-01-21']
+Tuesday = ['2019-01-08', '2019-01-15', '2019-01-22']
 
-print(df_29[df_29['startTime'] < '2019-01-29 00:10:00'])
+for m, t in zip(Monday, Tuesday):
+    df_29[m + '_diff_in'] = df_29[m + '_inNums'] - df_29[t + '_inNums']
+    df_29[m + '_diff_out'] = df_29[m + '_outNums'] - df_29[t + '_outNums']
+
+
+def diff_mean(row, in_out):
+    diff_min = 999
+    re = 0
+    for m1 in Monday:
+        for m2 in Monday:
+            if m1 == m2:
+                continue
+            diff = abs(row[m1 + in_out] - row[m2 + in_out])
+            if diff < diff_min:
+                diff_min = diff
+                re = (row[m1 + in_out] + row[m2 + in_out]) / 2
+    return re
+
+
+df_29['inNums'] = df_29['inNums'] - df_29.apply(diff_mean, axis=1, args=('_diff_in',))
+df_29['outNums'] = df_29['outNums'] - df_29.apply(diff_mean, axis=1, args=('_diff_out',))
+
+"""rule 5:20前及22:50后无人进站"""
+flag = (df_29['startTime'] <= '2019-01-29 05:20:00') | (df_29['startTime'] >= '2019-01-29 22:50:00')
+df_29.loc[flag, 'inNums'] = 0
+
+"""答案"""
+ans = df_29.loc[:, ['stationID', 'startTime', 'endTime', 'inNums', 'outNums']].fillna(0)
+ans.to_csv('data/result/ans_rule_0326.csv', index=False)
