@@ -1,5 +1,8 @@
 import pickle
 import pandas as pd
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
+from sklearn.svm import SVR
 
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 5000)
@@ -39,8 +42,44 @@ def diff_mean(row, in_out):
     return re
 
 
-df_29['inNums'] = df_29['inNums'] - df_29.apply(diff_mean, axis=1, args=('_diff_in',))
-df_29['outNums'] = df_29['outNums'] - df_29.apply(diff_mean, axis=1, args=('_diff_out',))
+def diff_trend(row, in_out):
+    """
+    计算周二与周一之间的流量差距，并预测差距
+    :param row:
+    :param in_out:
+    :return:
+    """
+    diff_min = 999
+    re = 0
+    for m1 in Monday:
+        for m2 in Monday:
+            if m1 == m2:
+                continue
+            diff = abs(row[m1 + in_out] - row[m2 + in_out])
+            if diff < diff_min:
+                diff_min = diff
+                re = (row[m1 + in_out] + row[m2 + in_out]) / 2
+
+    X = [[i] for i in range(len(Monday))]
+    Y = [row[Monday[i] + in_out] for i in range(len(Monday))]
+    regr = LinearRegression()
+    regr.fit(X, Y)
+    r2 = r2_score(regr.predict(X), Y)
+
+    if r2 > 0.75:
+        svr = SVR(gamma=.1, C=100)
+        svr.fit(X, Y)
+        re = svr.predict([[len(Monday)]])[0]
+
+    return re
+
+
+# df_29['inNums'] = df_29['inNums'] - df_29.apply(diff_mean, axis=1, args=('_diff_in',))
+# df_29['outNums'] = df_29['outNums'] - df_29.apply(diff_mean, axis=1, args=('_diff_out',))
+
+
+df_29['inNums'] = df_29['inNums'] - df_29.apply(diff_trend, axis=1, args=('_diff_in',))
+df_29['outNums'] = df_29['outNums'] - df_29.apply(diff_trend, axis=1, args=('_diff_out',))
 
 """rule 5:20前及22:50后无人进站"""
 flag = (df_29['startTime'] <= '2019-01-29 05:20:00') | (df_29['startTime'] >= '2019-01-29 22:50:00')
@@ -48,4 +87,6 @@ df_29.loc[flag, 'inNums'] = 0
 
 """答案"""
 ans = df_29.loc[:, ['stationID', 'startTime', 'endTime', 'inNums', 'outNums']].fillna(0)
+ans['inNums'] = ans['inNums'].astype('int')
+ans['outNums'] = ans['outNums'].astype('int')
 ans.to_csv('data/result/ans_rule_0326.csv', index=False)
