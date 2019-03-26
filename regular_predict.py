@@ -85,6 +85,13 @@ df_29['outNums'] = df_29['outNums'] - df_29.apply(diff_trend, axis=1, args=('_di
 flag = (df_29['startTime'] <= '2019-01-29 05:20:00') | (df_29['startTime'] >= '2019-01-29 22:50:00')
 df_29.loc[flag, 'inNums'] = 0
 
+"""rule 小于0数据职位0"""
+flag = df_29['inNums'] < 0
+df_29.loc[flag, 'inNums'] = 0
+
+flag = df_29['outNums'] < 0
+df_29.loc[flag, 'outNums'] = 0
+
 """答案"""
 ans = df_29.loc[:, ['stationID', 'startTime', 'endTime', 'inNums', 'outNums']].fillna(0)
 ans['inNums'] = ans['inNums'].astype('int')
