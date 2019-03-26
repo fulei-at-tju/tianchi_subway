@@ -43,7 +43,7 @@ def etc_model():
     内存溢出
     :return:
     """
-    forest = ExtraTreesClassifier(n_estimators=10, max_depth=None, min_samples_split=2, verbose=True, random_state=0)
+    forest = ExtraTreesClassifier(n_estimators=1000, max_depth=3, min_samples_split=2, verbose=True, random_state=0)
     forest.fit(train_x, train_y_in)
     pre_y = forest.predict(test_x)
     score = mae(np.array(pre_y), test_y_in)
