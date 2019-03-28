@@ -128,7 +128,7 @@ def all_sample_10min():
             pickle.dump(df2, f)
 
 
-def test_29():
+def test_29_data():
     """
     29日csv数据形成训练数据
     :return:
@@ -245,7 +245,16 @@ def form_ans(df_pre):
     s2.to_csv('data/Metro_testA/Metro_testA/ans.csv', index=False)
 
 
+def test_data_2_feature():
+    test = pd.read_csv('data/Metro_testA/Metro_testA/testA_submit_2019-01-29.csv')
+
+
 def original_2_feature(path):
+    """
+    原始数据->10分钟聚合
+    :param path:
+    :return:
+    """
     df = pd.read_csv(path)
     df['day'] = df['time'].apply(lambda x: int(x[8:10]))
     df['week'] = pd.to_datetime(df['time']).dt.dayofweek + 1
@@ -263,11 +272,9 @@ def original_2_feature(path):
         name='nuni_deviceID_of_stationID_hour_minute')
     result = result.merge(tmp, on=['stationID', 'hour', 'minute'], how='left')
 
-    # in,out
     result['inNums'] = result['sum']
     result['outNums'] = result['count'] - result['sum']
 
-    #
     result['day_since_first'] = result['day'] - 1
     result.fillna(0, inplace=True)
     del result['sum'], result['count']
@@ -275,9 +282,73 @@ def original_2_feature(path):
     return result
 
 
+def fix_day(d):
+    if d in [1, 2, 3, 4]:
+        return d
+    elif d in [7, 8, 9, 10, 11]:
+        return d - 2
+    elif d in [14, 15, 16, 17, 18]:
+        return d - 4
+    elif d in [21, 22, 23, 24, 25]:
+        return d - 6
+    elif d in [28, 29]:
+        return d - 8
+
+
+def test_29_data_process(df):
+    """
+    29日测试数据转换为特征
+    :param df:
+    :return:
+    """
+    df['week'] = pd.to_datetime(df['startTime']).dt.dayofweek + 1
+    df['weekend'] = (pd.to_datetime(df.startTime).dt.weekday >= 5).astype(int)
+    df['day'] = df['startTime'].apply(lambda x: int(x[8:10]))
+    df['hour'] = df['startTime'].apply(lambda x: int(x[11:13]))
+    df['minute'] = df['startTime'].apply(lambda x: int(x[14:15] + '0'))
+    df['day_since_first'] = df['day'] - 1
+    df = df.drop(['startTime', 'endTime'], axis=1)
+    return df
+
+
+def last_day_feature(df):
+    """
+    增加前一日特征
+    :param df:
+    :return:
+    """
+    stat_columns = ['inNums', 'outNums']
+    for f in stat_columns:
+        df.rename(columns={f: f + '_last'}, inplace=True)
+
+    df = df[['stationID', 'day', 'hour', 'minute', 'inNums_last', 'outNums_last']]
+    return df
+
+
+def feature_engineering():
+    test_29 = pd.read_csv('data/Metro_testA/Metro_testA/testA_submit_2019-01-29.csv')
+    test_28 = pd.read_csv('data/Metro_testA/Metro_testA/testA_record_2019-01-28.csv')
+
+    data = original_2_feature(test_28)
+
+    for _dt in dt:
+        df = pd.read_csv('data/Metro_train/Metro_train/record_{}.csv'.format(_dt))
+        data = pd.concat([data, df], axis=0, ignore_index=True)
+
+    data = data[(data.day != 5) & (data.day != 6)]
+    data = data[(data.day != 12) & (data.day != 13)]
+    data = data[(data.day != 19) & (data.day != 20)]
+    data = data[(data.day != 26) & (data.day != 27)]
+
+    data['day'] = data['day'].apply(fix_day)
+    data = pd.concat([data, test_29_data_process(test_29)], axis=0, ignore_index=True)
+
+    data = data.merge(last_day_feature(data), on=['stationID', 'day', 'hour', 'minute'], how='left').fillna(0)
+
+
 if __name__ == '__main__':
     csv2df()
     all_sample_10min()
     concat_10min()
     concat_10min_train_test_data()
-    test_29()
+    test_29_data()

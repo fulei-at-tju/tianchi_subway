@@ -189,8 +189,8 @@ params = {
     'bagging_seed': 0,
     'bagging_freq': 1,
     'verbose': 1,
-    'reg_alpha': 10,
-    'reg_lambda': 10
+    'reg_alpha': 20,
+    'reg_lambda': 20
 }
 
 ######################################################inNums
