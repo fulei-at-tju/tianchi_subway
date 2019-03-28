@@ -1,7 +1,11 @@
 import pickle
+import warnings
 
 import numpy as np
 import pandas as pd
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.filterwarnings('ignore')
 
 # 日期时间
 datetime = pd.date_range('2019-01-01', '2019-01-25')
@@ -311,13 +315,62 @@ def test_29_data_process(df):
     return df
 
 
-def last_day_feature(df):
+def in_out_feature(df):
     """
-    增加前一日特征
+    构造进站出站的特征
     :param df:
     :return:
     """
+    tmp = df.groupby(['stationID', 'week', 'hour', 'minute'], as_index=False)['inNums'].agg({
+        'inNums_whm_max': 'max',
+        'inNums_whm_min': 'min',
+        'inNums_whm_mean': 'mean'
+    })
+    df = df.merge(tmp, on=['stationID', 'week', 'hour', 'minute'], how='left')
+
+    tmp = df.groupby(['stationID', 'week', 'hour', 'minute'], as_index=False)['outNums'].agg({
+        'outNums_whm_max': 'max',
+        'outNums_whm_min': 'min',
+        'outNums_whm_mean': 'mean'
+    })
+    df = df.merge(tmp, on=['stationID', 'week', 'hour', 'minute'], how='left')
+
+    tmp = df.groupby(['stationID', 'week', 'hour'], as_index=False)['inNums'].agg({
+        'inNums_wh_max': 'max',
+        'inNums_wh_min': 'min',
+        'inNums_wh_mean': 'mean'
+    })
+    df = df.merge(tmp, on=['stationID', 'week', 'hour'], how='left')
+
+    tmp = df.groupby(['stationID', 'week', 'hour'], as_index=False)['outNums'].agg({
+        'outNums_wh_max': 'max',
+        'outNums_wh_min': 'min',
+        'outNums_wh_mean': 'mean'
+    })
+    df = df.merge(tmp, on=['stationID', 'week', 'hour'], how='left')
+    return df
+
+
+def last_day_feature(df):
+    """
+    增加前一日特征[29日前一日数据用的是28日,需要更换成前几日的]
+    :param df:
+    :return:
+    """
+
+    def get_refer_day(d):
+        if d == 20:
+            return 29
+        else:
+            return d + 1
+
     stat_columns = ['inNums', 'outNums']
+
+    df_00 = df[df.day == 1]
+    df_00['day'] = df_00['day'] - 1
+
+    df = pd.concat([df, df_00], axis=0, ignore_index=True)
+    df['day'] = df['day'].apply(get_refer_day)
     for f in stat_columns:
         df.rename(columns={f: f + '_last'}, inplace=True)
 
@@ -325,15 +378,36 @@ def last_day_feature(df):
     return df
 
 
+def recover_day(d):
+    """
+    将日期还原
+    :param d:
+    :return:
+    """
+    if d in [1, 2, 3, 4]:
+        return d
+    elif d in [5, 6, 7, 8, 9]:
+        return d + 2
+    elif d in [10, 11, 12, 13, 14]:
+        return d + 4
+    elif d in [15, 16, 17, 18, 19]:
+        return d + 6
+    elif d == 20:
+        return d + 8
+    else:
+        return d
+
+
 def feature_engineering():
     test_29 = pd.read_csv('data/Metro_testA/Metro_testA/testA_submit_2019-01-29.csv')
-    test_28 = pd.read_csv('data/Metro_testA/Metro_testA/testA_record_2019-01-28.csv')
 
-    data = original_2_feature(test_28)
+    data = original_2_feature('data/Metro_testA/Metro_testA/testA_record_2019-01-28.csv')
 
     for _dt in dt:
-        df = pd.read_csv('data/Metro_train/Metro_train/record_{}.csv'.format(_dt))
+        print(_dt)
+        df = original_2_feature('data/Metro_train/Metro_train/record_{}.csv'.format(_dt))
         data = pd.concat([data, df], axis=0, ignore_index=True)
+        print(data.day.unique())
 
     data = data[(data.day != 5) & (data.day != 6)]
     data = data[(data.day != 12) & (data.day != 13)]
@@ -345,10 +419,17 @@ def feature_engineering():
 
     data = data.merge(last_day_feature(data), on=['stationID', 'day', 'hour', 'minute'], how='left').fillna(0)
 
+    data = in_out_feature(data)
+    data.day = data.day.apply(recover_day)
+
+    with open('data/Metro_train/Metro_train/baseline_train.csv', 'wb') as f:
+        pickle.dump(data, f)
+
 
 if __name__ == '__main__':
-    csv2df()
-    all_sample_10min()
-    concat_10min()
-    concat_10min_train_test_data()
-    test_29_data()
+    # csv2df()
+    # all_sample_10min()
+    # concat_10min()
+    # concat_10min_train_test_data()
+    # test_29_data()
+    feature_engineering()

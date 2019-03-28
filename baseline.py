@@ -163,7 +163,7 @@ def recover_day(d):
 
 all_columns = [f for f in data.columns if f not in ['weekend', 'inNums', 'outNums']]
 ### all data
-all_data = data[(data.day != 29) ]
+all_data = data[(data.day != 29)]
 all_data['day'] = all_data['day'].apply(recover_day)
 X_data = all_data[all_columns].values
 
@@ -258,3 +258,5 @@ sub.loc[flag, 'inNums'] = 0
 flag = (sub['startTime'] <= '2019-01-29 05:40:00') | (sub['startTime'] >= '2019-01-29 23:00:00')
 sub.loc[flag, 'outNums'] = 0
 sub[['stationID', 'startTime', 'endTime', 'inNums', 'outNums']].to_csv('data/result/sub_model.csv', index=False)
+
+# data = feature_engineering()
