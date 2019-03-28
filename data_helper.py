@@ -245,6 +245,36 @@ def form_ans(df_pre):
     s2.to_csv('data/Metro_testA/Metro_testA/ans.csv', index=False)
 
 
+def original_2_feature(path):
+    df = pd.read_csv(path)
+    df['day'] = df['time'].apply(lambda x: int(x[8:10]))
+    df['week'] = pd.to_datetime(df['time']).dt.dayofweek + 1
+    df['weekend'] = (pd.to_datetime(df.time).dt.weekday >= 5).astype(int)
+    df['hour'] = df['time'].apply(lambda x: int(x[11:13]))
+    df['minute'] = df['time'].apply(lambda x: int(x[14:15] + '0'))
+    result = df.groupby(['stationID', 'week', 'weekend', 'day', 'hour', 'minute']).status.agg(
+        ['count', 'sum']).reset_index()
+
+    tmp = df.groupby(['stationID'])['deviceID'].nunique().reset_index(name='nuni_deviceID_of_stationID')
+    result = result.merge(tmp, on=['stationID'], how='left')
+    tmp = df.groupby(['stationID', 'hour'])['deviceID'].nunique().reset_index(name='nuni_deviceID_of_stationID_hour')
+    result = result.merge(tmp, on=['stationID', 'hour'], how='left')
+    tmp = df.groupby(['stationID', 'hour', 'minute'])['deviceID'].nunique().reset_index(
+        name='nuni_deviceID_of_stationID_hour_minute')
+    result = result.merge(tmp, on=['stationID', 'hour', 'minute'], how='left')
+
+    # in,out
+    result['inNums'] = result['sum']
+    result['outNums'] = result['count'] - result['sum']
+
+    #
+    result['day_since_first'] = result['day'] - 1
+    result.fillna(0, inplace=True)
+    del result['sum'], result['count']
+
+    return result
+
+
 if __name__ == '__main__':
     csv2df()
     all_sample_10min()

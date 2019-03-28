@@ -19,13 +19,14 @@ df_29 = pd.merge(left=df_29, right=record_all, left_on=['stationID', 'hms'], rig
                  how='left').fillna(0)
 
 # base data
-df_29['inNums'], df_29['outNums'] = df_29['2019-01-28_inNums'], df_29['2019-01-28_outNums']
+df_29['inNums'], df_29['outNums'] = df_29['2019-01-22_inNums'], df_29['2019-01-22_outNums']
 
 """rule 利用2019-01-28日数据预测2019-01-29日数据。所以，计算历史上周一数据与周二数据的差值
    mean(d_monday - d_tuesday) = d_2019-01-28 - d_2019-01-29
 """
-Monday = ['2019-01-07', '2019-01-14', '2019-01-21']
-Tuesday = ['2019-01-08', '2019-01-15', '2019-01-22']
+
+Monday = ['2019-01-15', '2019-01-16', '2019-01-17']
+Tuesday = ['2019-01-22', '2019-01-23', '2019-01-24']
 
 for m, t in zip(Monday, Tuesday):
     df_29[m + '_diff_in'] = df_29[m + '_inNums'] - df_29[t + '_inNums']
@@ -48,7 +49,7 @@ def diff_mean(row, in_out):
 
 def diff_trend(row, in_out):
     """
-    计算周二与周一之间的流量差距，并预测差距
+    趋势
     """
     diff_min = 999
     re = 0
@@ -87,6 +88,27 @@ def diff_trend(row, in_out):
 
 df_29['inNums'] = df_29['inNums'] - df_29.apply(diff_trend, axis=1, args=('_diff_in',))
 df_29['outNums'] = df_29['outNums'] - df_29.apply(diff_trend, axis=1, args=('_diff_out',))
+
+"""rule 22,23,24 日两日最近接的平均"""
+
+
+def three_days_mean(row, in_out):
+    days = ['2019-01-22', '2019-01-23', '2019-01-24']
+    diff_min = 999
+    re = 0
+    for m1 in days:
+        for m2 in days:
+            if m1 == m2:
+                continue
+            diff = abs(row[m1 + in_out] - row[m2 + in_out])
+            if diff < diff_min:
+                diff_min = diff
+                re = (row[m1 + in_out] + row[m2 + in_out]) / 2
+    return re
+
+
+df_29['inNums'] = df_29.apply(three_days_mean, axis=1, args=('_inNums',))
+df_29['outNums'] = df_29.apply(three_days_mean, axis=1, args=('_outNums',))
 
 """rule 5:20前及22:50后无人进站"""
 flag = (df_29['startTime'] <= '2019-01-29 05:20:00') | (df_29['startTime'] >= '2019-01-29 22:50:00')
