@@ -68,6 +68,22 @@ def data_loader():
     return train_x, train_y, test_x, test_y
 
 
+def data_loader2():
+    with open('data/Metro_train/Metro_train/baseline_train.csv', 'rb') as f:
+        data = pickle.load(f)
+    all_columns = [f for f in data.columns if f not in ['weekend', 'inNums', 'outNums']]
+
+    train = data[(data.day != 29) & (data.day != 28)]
+    train_x = train[all_columns].values
+    train_y = train[['inNums', 'outNums']].values
+
+    test = data[data.day == 29]
+    test_x = test[all_columns].values
+    test_y = test[['inNums', 'outNums']].values
+
+    return train_x, train_y, test_x, test_y
+
+
 def csv2df():
     """
     [ 预处理 ]原始csv文件存储为dataframe
@@ -409,15 +425,22 @@ def feature_engineering():
         data = pd.concat([data, df], axis=0, ignore_index=True)
         print(data.day.unique())
 
+    # data
+    # with open('data/Metro_train/Metro_train/baseline_train_data_b.csv', 'wb') as f:
+    #     pickle.dump(data, f)
+
+    with open('data/Metro_train/Metro_train/baseline_train_data_b.csv', 'rb') as f:
+        data = pickle.load(f)
+
     data = data[(data.day != 5) & (data.day != 6)]
     data = data[(data.day != 12) & (data.day != 13)]
     data = data[(data.day != 19) & (data.day != 20)]
     data = data[(data.day != 26) & (data.day != 27)]
 
     data['day'] = data['day'].apply(fix_day)
-    data = pd.concat([data, test_29_data_process(test_29)], axis=0, ignore_index=True)
+    data = pd.concat([data, test_29_data_process(test_29.copy())], axis=0, ignore_index=True)
 
-    data = data.merge(last_day_feature(data), on=['stationID', 'day', 'hour', 'minute'], how='left').fillna(0)
+    data = data.merge(last_day_feature(data.copy()), on=['stationID', 'day', 'hour', 'minute'], how='left').fillna(0)
 
     data = in_out_feature(data)
     data.day = data.day.apply(recover_day)

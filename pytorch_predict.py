@@ -3,9 +3,9 @@ import torch.nn.functional as F
 import torch.utils.data as Data
 import numpy as np
 
-from data_helper import data_loader, mae, model_saver
+from data_helper import data_loader2, mae
 
-train_x, train_y, test_x, test_y = data_loader()
+train_x, train_y, test_x, test_y = data_loader2()
 train_y = np.array(train_y)
 test_y = np.array(test_y)
 train_y_in, train_y_out = train_y[:, 0], train_y[:, 1]
@@ -47,7 +47,7 @@ class Net(torch.nn.Module):
         return x
 
 
-net = Net(n_feature=5, n_output=2)
+net = Net(n_feature=23, n_output=2)
 print(net)
 
 optimizer = torch.optim.Adam(net.parameters(), lr=LR, betas=(0.9, 0.99))
@@ -55,16 +55,17 @@ loss_func = torch.nn.L1Loss()
 
 
 def batch_train():
-    for epoch in range(10):
+    for epoch in range(3):
         for step, (batch_x, batch_y) in enumerate(loader):
             prediction = net(batch_x)
+
             loss = loss_func(prediction, batch_y)
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            if step % 50 == 0:
-                model_saver(net, 'pytorch_01')
+            if step % 5 == 0:
                 pre_test = net(test_x)
                 in_num = pre_test.data.numpy()[:, 0]
                 out_num = pre_test.data.numpy()[:, 1]
@@ -76,20 +77,21 @@ def batch_train():
 
 def train():
     for t in range(20000):
-        prediction = net(train_x)
-        loss = loss_func(prediction, train_y)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        prediction = net(train_x)  # input x and predict based on x
 
-        if t % 50 == 0:
-            model_saver(net, 'pytorch_02')
+        loss = loss_func(prediction, train_y)  # must be (1. nn output, 2. target)
+
+        optimizer.zero_grad()  # clear gradients for next train
+        loss.backward()  # backpropagation, compute gradients
+        optimizer.step()  # apply gradients
+
+        if t % 5 == 0:
             pre_test = net(test_x)
             in_num = pre_test.data.numpy()[:, 0]
             out_num = pre_test.data.numpy()[:, 1]
             score = (mae(in_num, test_y_in) + mae(out_num, test_y_in)) / 2
             loss2 = loss_func(pre_test, test_y)
-            print('step：{step}  train:  loss-{loss}  test:  loss-{loss2}  loss-{loss3}'
+            print('step-{step}  train:  loss-{loss}   test:  loss-{loss2}, loss-{loss3}'
                   .format(step=t, loss=loss, loss2=loss2, loss3=score))
 
 
