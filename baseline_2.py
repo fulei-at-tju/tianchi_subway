@@ -45,15 +45,15 @@ def lgb_model():
         'boosting_type': 'gbdt',
         'objective': 'regression',
         'metric': 'mae',
-        'num_leaves': 127,
-        'learning_rate': 0.005,
+        'num_leaves': 255,
+        'learning_rate': 0.004,
         'feature_fraction': 0.9,
         'bagging_fraction': 0.9,
         'bagging_seed': 0,
         'bagging_freq': 1,
         'verbose': 1,
-        'reg_alpha': 15,
-        'reg_lambda': 15
+        'reg_alpha': 13.5,
+        'reg_lambda': 13.5
     }
 
     y_train = train['inNums']
